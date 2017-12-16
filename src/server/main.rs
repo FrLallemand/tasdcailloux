@@ -46,7 +46,7 @@ fn minerals_get(range: Range, db: DB) -> Result<Json<Vec<Element>>, Error> {
     let mut result = Err(Error::InternalServerError);
     if let Some(from) = range.from {
         if let Some(to) = range.to {
-            let elements = controls::mineral::get_minerals(db.conn(), std::ops::Range{start: from, end: to})?;
+            let elements = controls::mineral::get_minerals(db.conn(), )?;
             result = Ok(Json(elements));
         }
     }
@@ -81,10 +81,19 @@ fn main() {
                 socket.write(&encoded).unwrap();
             },
             MessageType::GetRange{from, to} => {
-                println!("GetRange from {} to {} !", from, to);
+                let element = controls::mineral::get_mineral_range(get_db().conn(), from, to);
+                let encoded: Vec<u8> = serialize(&element, Infinite).unwrap();
+                socket.write(&encoded).unwrap();
             },
             MessageType::GetAll => {
-                println!("GetAll !");
+                let element = controls::mineral::get_mineral_all(get_db().conn());
+                let encoded: Vec<u8> = serialize(&element, Infinite).unwrap();
+                socket.write(&encoded).unwrap();
+            },
+            MessageType::GetCount => {
+                let element = controls::mineral::get_mineral_count(get_db().conn());
+                let encoded: Vec<u8> = serialize(&element, Infinite).unwrap();
+                socket.write(&encoded).unwrap();
             }
         };
     }
