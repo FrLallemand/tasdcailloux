@@ -8,13 +8,22 @@ extern crate bincode;
 use nanomsg::{Socket, Protocol};
 use bincode::{serialize, deserialize, Infinite};
 use tasdcailloux::models::*;
+use tasdcailloux::models::element::Element;
+
 use std::io::{Read, Write};
 
 fn main() {
-    let mut socket_push = Socket::new(Protocol::Push).unwrap();
-    socket_push.connect(&"tcp://127.0.0.1:5555").expect("Fail to bind to tcp port");
+    let mut socket = Socket::new(Protocol::Req).unwrap();
+    socket.connect(&"tcp://127.0.0.1:5555").expect("Fail to bind to tcp port");
 
-    let message = Message{ message_type: MessageType::GetRange{from: 0, to: 10} };
+    let message = Message{ message_type: MessageType::GetOne{ id: -1} };
     let encoded: Vec<u8> = serialize(&message, Infinite).unwrap();
-    socket_push.write(&encoded).unwrap();
+    socket.write(&encoded).unwrap();
+    let mut msg = Vec::new();
+    socket.read_to_end(&mut msg).unwrap();
+    let decoded: Result<Element, Error> = deserialize(&msg).unwrap();
+    match decoded{
+        Ok(element) => println!("{:?}", element),
+        Err(e) => println!("Error : {:?}",e)
+    }
 }

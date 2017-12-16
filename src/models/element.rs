@@ -1,5 +1,5 @@
 #[derive(Queryable)]
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 #[derive(Serialize, Deserialize)]
 pub struct Element {
     pub id: i32,

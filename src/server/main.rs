@@ -25,7 +25,7 @@ pub mod controls;
 use nanomsg::{Socket, Protocol};
 use bincode::{serialize, deserialize, Infinite};
 use tasdcailloux::models::element::Element;
-use tasdcailloux::models::{Message, MessageType};
+use tasdcailloux::models::{Message, MessageType, Error};
 use db::get_db;
 use std::io::{Read, Write};
 /*
@@ -67,19 +67,18 @@ fn dimension_get(db: DB, id: i32) -> Result<Json<Element>, Error> {
 }
 */
 fn main() {
-    //let element = controls::mineral::get_mineral(get_db().conn(), 1);
-    let mut socket_pull = Socket::new(Protocol::Pull).unwrap();
-    socket_pull.bind(&"tcp://127.0.0.1:5555").expect("Fail to bind to tcp port");
-
-
+    let mut socket = Socket::new(Protocol::Rep).unwrap();
+    socket.bind(&"tcp://127.0.0.1:5555").expect("Fail to bind to tcp port");
 
     loop {
         let mut msg = Vec::new();
-        socket_pull.read_to_end(&mut msg).unwrap();
+        socket.read_to_end(&mut msg).unwrap();
         let decoded: Message = deserialize(&msg).unwrap();
         match decoded.message_type {
-            MessageType::GetOne => {
-                println!("GetOne !");
+            MessageType::GetOne{id} => {
+                let element = controls::mineral::get_mineral(get_db().conn(), id);
+                let encoded: Vec<u8> = serialize(&element, Infinite).unwrap();
+                socket.write(&encoded).unwrap();
             },
             MessageType::GetRange{from, to} => {
                 println!("GetRange from {} to {} !", from, to);

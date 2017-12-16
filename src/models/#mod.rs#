@@ -1,5 +1,4 @@
 pub mod element;
-use diesel::result::Error as DieselError;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Message {
