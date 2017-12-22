@@ -75,6 +75,11 @@ fn main() {
         socket.read_to_end(&mut msg).unwrap();
         let decoded: Message = deserialize(&msg).unwrap();
         match decoded.message_type {
+            MessageType::IsReady => {
+                let result: Result<bool, &str> = Ok(true);
+                let encoded: Vec<u8> = serialize(&result, Infinite).unwrap();
+                socket.write(&encoded).unwrap();
+            },
             MessageType::GetOne{id} => {
                 let element = controls::mineral::get_mineral(get_db().conn(), id);
                 let encoded: Vec<u8> = serialize(&element, Infinite).unwrap();

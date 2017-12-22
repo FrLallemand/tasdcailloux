@@ -1,8 +1,6 @@
 extern crate tasdcailloux;
 extern crate nanomsg;
 extern crate gtk;
-#[macro_use]
-extern crate serde_derive;
 extern crate bincode;
 
 pub mod ui;
@@ -10,6 +8,8 @@ pub mod connection;
 
 
 use ui::App;
+use connection::*;
+use tasdcailloux::models::element::Element;
 
 fn main() {
     /*
@@ -27,8 +27,18 @@ fn main() {
         Err(e) => println!("Error : {:?}",e)
     }
      */
+    let socket = establish_connection();
+    let origin_list_result = get_origin_list(socket);
+    let origin_list: Vec<Element> = match origin_list_result {
+        Ok(elements) => {
+            elements
+        },
+        Err(_) => {
+            Vec::new()
+        }
+    };
 
-    App::new()
+    App::new(origin_list)
         .connect_events()
         .then_execute();
 

@@ -1,20 +1,15 @@
-use super::{Content, Header, ListPanel};
-use connection::*;
+use super::{Content, Header};
 use gtk;
 use gtk::*;
 use std::process;
-use std::sync::{Arc, RwLock};
-use nanomsg::{Socket, Protocol};
-use std::io::{Read, Write};
-use bincode::{serialize, deserialize, Infinite};
-use tasdcailloux::models::{Message, Error};
-use tasdcailloux::models::MessageType as AppMessageType;
 use tasdcailloux::models::element::Element;
+use std::cell::RefCell;
 
 pub struct App {
     pub window:  Window,
     pub header:  Header,
     pub content: Content,
+    pub origin_list: RefCell<Vec<Element>>
 }
 
 pub struct ConnectedApp(App);
@@ -28,9 +23,9 @@ impl ConnectedApp {
 
 
 impl App {
-    pub fn new() -> App{
+    pub fn new(list: Vec<Element>) -> App{
         if gtk::init().is_err() {
-            eprintln!("failed to initialize GTK Application");
+            println!("failed to initialize GTK Application");
             process::exit(1);
         }
         let window = Window::new(WindowType::Toplevel);
@@ -45,43 +40,41 @@ impl App {
             main_quit();
             Inhibit(false)
         });
-
-        App { window, header, content }
+        App { window, header, content, origin_list: RefCell::new(list) }
     }
 
     pub fn connect_events(self) -> ConnectedApp {
-        let socket = Arc::new(RwLock::new(establish_connection()));
-
+        //let socket = Arc::new(RwLock::new(establish_connection()));
         {
-            let listPanel = &self.content.listPanel;
-            self.create_list(&listPanel, socket.clone());
+            //let content = &self.content;
+            self.create_list();
+            self.connect_row_selected();
         }
 
         ConnectedApp(self)
     }
 
-    pub fn create_list(&self, listPanel: &ListPanel, socket: Arc<RwLock<Socket>>) {
-
-
-        let message = Message{ message_type: AppMessageType::GetAll };
-        let encoded: Vec<u8> = serialize(&message, Infinite).unwrap();
-        let mut s = socket.write().unwrap();
-        s.write(&encoded).unwrap();
-        let mut msg = Vec::new();
-        s.read_to_end(&mut msg).unwrap();
-        let decoded: Result<Vec<Element>, Error> = deserialize(&msg).unwrap();
-        match decoded{
-            Ok(elements) => {
-                for element in elements {
-                    if(&element.name == ""){
-                        listPanel.add_row(&element.name, true);
-                    } else {
-                        listPanel.add_row(&element.name, false);
-                    }
-                }
-            },
-            Err(e) => println!("Error : {:?}",e)
+    pub fn create_list(&self) {
+        let c = self.origin_list.borrow();
+        for element in c.iter() {
+            if &element.name == "" {
+                self.content.add_row(element, true);
+            } else {
+                self.content.add_row(element, false);
+            }
         }
 
+    }
+
+    pub fn connect_row_selected(&self) {
+        let stack = self.content.stack.clone();
+        let list = self.content.list.clone();
+        self.content.list.connect_row_selected(move |_, _| {
+            if let Some(row) = list.get_selected_row() {
+                if let Some(id) = row.get_name() {
+                    stack.set_visible_child_name(&id);
+                }
+            }
+        });
     }
 }

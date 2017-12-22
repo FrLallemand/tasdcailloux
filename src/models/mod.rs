@@ -8,6 +8,7 @@ pub struct Message {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum MessageType{
+    IsReady,
     GetOne{id: i32},
     GetRange{from: i32, to: i32},
     GetAll,

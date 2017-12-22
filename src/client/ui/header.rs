@@ -1,4 +1,3 @@
-use gtk;
 use gtk::*;
 
 pub struct Header {
