@@ -1,7 +1,10 @@
 extern crate tasdcailloux;
 extern crate nanomsg;
+extern crate gdk_pixbuf;
 extern crate gtk;
 extern crate bincode;
+#[macro_use]extern crate lazy_static;
+extern crate futures;
 
 pub mod ui;
 pub mod connection;
@@ -27,8 +30,8 @@ fn main() {
         Err(e) => println!("Error : {:?}",e)
     }
      */
-    let socket = establish_connection();
-    let origin_list_result = get_origin_list(socket);
+    //let mut socket = establish_connection();
+    let origin_list_result = get_origin_list();
     let origin_list: Vec<Element> = match origin_list_result {
         Ok(elements) => {
             elements

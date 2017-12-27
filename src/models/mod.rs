@@ -1,4 +1,5 @@
 pub mod element;
+pub mod image;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Message {
@@ -12,12 +13,15 @@ pub enum MessageType{
     GetOne{id: i32},
     GetRange{from: i32, to: i32},
     GetAll,
-    GetCount
+    GetCount,
+    GetImagesCount{id: i32},
+    GetImage{id: i32, image: i32}
 }
 
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum Error{
     InternalError,
-    NotFound,
+    ElementNotFound,
+    ImageNotFound
 }

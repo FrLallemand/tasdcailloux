@@ -18,13 +18,13 @@ extern crate nanomsg;
 extern crate serde_derive;
 extern crate bincode;
 
-
 pub mod db;
 pub mod controls;
 
 use nanomsg::{Socket, Protocol};
 use bincode::{serialize, deserialize, Infinite};
 use tasdcailloux::models::element::Element;
+use tasdcailloux::models::image::Image;
 use tasdcailloux::models::{Message, MessageType, Error};
 use db::get_db;
 use std::io::{Read, Write};
@@ -69,7 +69,8 @@ fn dimension_get(db: DB, id: i32) -> Result<Json<Element>, Error> {
 fn main() {
     let mut socket = Socket::new(Protocol::Rep).unwrap();
     socket.bind(&"tcp://127.0.0.1:5555").expect("Fail to bind to tcp port");
-
+    //let image = controls::mineral::get_image(get_db().conn(), 1, -1);
+    //println!("{:?}", image);
     loop {
         let mut msg = Vec::new();
         socket.read_to_end(&mut msg).unwrap();
@@ -79,6 +80,7 @@ fn main() {
                 let result: Result<bool, &str> = Ok(true);
                 let encoded: Vec<u8> = serialize(&result, Infinite).unwrap();
                 socket.write(&encoded).unwrap();
+
             },
             MessageType::GetOne{id} => {
                 let element = controls::mineral::get_mineral(get_db().conn(), id);
@@ -98,6 +100,18 @@ fn main() {
             MessageType::GetCount => {
                 let element = controls::mineral::get_mineral_count(get_db().conn());
                 let encoded: Vec<u8> = serialize(&element, Infinite).unwrap();
+                socket.write(&encoded).unwrap();
+            },
+            MessageType::GetImagesCount{id} => {
+                let count = controls::mineral::get_images_count(get_db().conn(), id);
+                let encoded: Vec<u8> = serialize(&count, Infinite).unwrap();
+                socket.write(&encoded).unwrap();
+            }
+            MessageType::GetImage{id, image} => {
+                let image = controls::mineral::get_image(get_db().conn(), id, image);
+                let encoded: Vec<u8> = serialize(&image, Infinite).unwrap();
+ //               let test = &encoded[0..10];
+                //println!("{:?}", &encoded[0..10]);
                 socket.write(&encoded).unwrap();
             }
         };
