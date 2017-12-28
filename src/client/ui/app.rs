@@ -106,7 +106,7 @@ impl App {
                             let id_clone = id.clone();
                             let image_cache_clone = image_cache.clone();
                             let thr = thread::spawn(move || {
-                                let img = get_image_for(id_clone.parse().unwrap(), 0)("Unable to get image");
+                                let img = get_image_for(id_clone.parse().unwrap(), 0).expect("Unable to get image");
                                 let cache_path = image_cache_clone.to_str().unwrap();
                                 let file = File::create(cache_path).unwrap();
                                 let mut writer = BufWriter::new(file);
