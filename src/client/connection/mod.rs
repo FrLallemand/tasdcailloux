@@ -98,11 +98,11 @@ pub fn get_image_for(id: i32, image: i32) -> Result<Vec<u8>, Error>{
             let img_result: Result<Vec<u8>, Error> = deserialize(&msg).unwrap();
             match img_result {
                 Ok(img) => {
-                    let mut file = File::create(format!("{}_{}", id.to_string(), image.to_string())).unwrap();
+                    //let mut file = File::create(format!("{}_{}", id.to_string(), image.to_string())).unwrap();
                     //let mut file = File::create("tasqsqssdcailloux").unwrap();
-                    let mut writer = BufWriter::new(file);
-                    writer.write(&img);
-                    Ok(Vec::new())
+                    //let mut writer = BufWriter::new(file);
+                    //writer.write(&img);
+                    Ok(img)
                 },
                 Err(_) => {
                     Err(Error::InternalError)

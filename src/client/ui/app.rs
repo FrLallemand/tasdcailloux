@@ -1,3 +1,5 @@
+extern crate xdg;
+
 use super::{Content, Header};
 use gtk;
 use gtk::*;
@@ -5,17 +7,20 @@ use gdk_pixbuf;
 use std::process;
 use tasdcailloux::models::element::Element;
 use std::cell::RefCell;
-use std::io::{Read, Write};
 use nanomsg::{Socket, Protocol};
 use connection::*;
 use futures::Future;
 use std::{thread, time};
+use std::fs;
+use std::fs::File;
+use std::io::{BufReader, BufWriter, Read, Write};
 
 pub struct App {
     pub window:  Window,
     pub header:  Header,
     pub content: Content,
     pub origin_list: RefCell<Vec<Element>>,
+    pub name: String
  //   pub socket: Socket
 }
 
@@ -38,6 +43,7 @@ impl App {
         let window = Window::new(WindowType::Toplevel);
         let header = Header::new();
         let content = Content::new();
+        let name = String::from("tasdcailloux");
 
         window.set_titlebar(&header.container);
         window.set_wmclass("tascailloux", "tasDCailloux");
@@ -47,7 +53,12 @@ impl App {
             main_quit();
             Inhibit(false)
         });
-        App { window, header, content, origin_list: RefCell::new(list) }
+
+        let xdg_dirs = xdg::BaseDirectories::with_prefix(&name).unwrap();
+        xdg_dirs.create_cache_directory("images")
+            .expect("cannot create cache directory");
+
+        App { window, header, content, origin_list: RefCell::new(list), name }
     }
 
     pub fn connect_events(self) -> ConnectedApp {
@@ -77,23 +88,49 @@ impl App {
         let stack = self.content.stack.clone();
         let list = self.content.list.clone();
         let stack_elements = self.content.stack_elements.clone();
+        let app_name = self.name.clone();
         self.content.list.connect_row_selected( move |_, _| {
             if let Some(row) = list.get_selected_row() {
                 if let Some(id) = row.get_name() {
                     stack.set_visible_child_name(&id);
                     //stack_elements.borrow().get(&id.parse().unwrap()).unwrap().name_label.set_markup("plop");
-                    let id_clone = id.clone();
 
-                    //TODO : use future, make all this shit async. Good luck, you're on your own ;)
-                    let thr = thread::spawn(move || {
-                        get_image_for(id_clone.parse().unwrap(), 0);
-                    });
+                    let xdg_dirs = xdg::BaseDirectories::with_prefix(&app_name).unwrap();
+//                    let cache_path = xdg_dirs.place_cache_file(format!("images/{}_{}", id, 0));
+                    let find_cache_path = xdg_dirs.find_cache_file(format!("images/{}_{}", id, 0));
+                    //let id_clone = id.clone();
 
-                    thr.join();
+                    let pix = match find_cache_path {
+                        Some(cache_path) => {
+                            // Load it
+                            gdk_pixbuf::Pixbuf::new_from_file_at_scale(&cache_path.to_str().unwrap(),
+                                                                       250, 250, true)
+                        },
+                        None => {
+                            // Download and load it
 
-                    let pix = gdk_pixbuf::Pixbuf::new_from_file_at_scale(&format!("{}_{}", id, 0),
-                                                                        250, 250, true);
+                            //TODO : use future, make all this shit async. Good luck, you're on your own ;)
+                            let app_name = app_name.clone();
+                            let id_clone = id.clone();
+                            //let path = format!("images/{}_{}", id_clone, 0)
+                            //let path = xdg_dirs.place_cache_file().unwrap();
+                            //let cache_path = path.to_str().unwrap();
+                            //let cache_path_clone = cache_path.clone();
+                            let xdg_dirs_clone = xdg_dirs.clone();
+                            let thr = thread::spawn(move || {
+                                let img = get_image_for(id_clone.parse().unwrap(), 0).expect("Unable to get image");
 
+                                let cache_path = xdg_dirs_clone.place_cache_file(format!("images/{}_{}", id_clone, 0)).unwrap();
+                                let file = File::create(cache_path.to_str().unwrap()).unwrap();
+                                let mut writer = BufWriter::new(file);
+                                writer.write(&img);
+                            });
+                            thr.join();
+                            let cache_path = xdg_dirs.place_cache_file(format!("images/{}_{}", id, 0));
+                            gdk_pixbuf::Pixbuf::new_from_file_at_scale(&cache_path.unwrap().to_str().unwrap(),
+                                                                       250, 250, true)
+                        }
+                    };
                     stack_elements.borrow().get(&id.parse().unwrap()).unwrap().element_image.set_from_pixbuf(&pix.unwrap());
                 }
             }
