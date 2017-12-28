@@ -7,13 +7,10 @@ use gdk_pixbuf;
 use std::process;
 use tasdcailloux::models::element::Element;
 use std::cell::RefCell;
-use nanomsg::{Socket, Protocol};
 use connection::*;
-use futures::Future;
-use std::{thread, time};
-use std::fs;
+use std::thread;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Read, Write};
+use std::io::{BufWriter, Write};
 
 pub struct App {
     pub window:  Window,
@@ -93,13 +90,10 @@ impl App {
             if let Some(row) = list.get_selected_row() {
                 if let Some(id) = row.get_name() {
                     stack.set_visible_child_name(&id);
-                    //stack_elements.borrow().get(&id.parse().unwrap()).unwrap().name_label.set_markup("plop");
 
                     let xdg_dirs = xdg::BaseDirectories::with_prefix(&app_name).unwrap();
-//                    let cache_path = xdg_dirs.place_cache_file(format!("images/{}_{}", id, 0));
                     let find_cache_path = xdg_dirs.find_cache_file(format!("images/{}_{}", id, 0));
-                    //let id_clone = id.clone();
-
+                    let image_cache = xdg_dirs.place_cache_file(format!("images/{}_{}", id, 0)).unwrap();
                     let pix = match find_cache_path {
                         Some(cache_path) => {
                             // Load it
@@ -108,26 +102,19 @@ impl App {
                         },
                         None => {
                             // Download and load it
-
                             //TODO : use future, make all this shit async. Good luck, you're on your own ;)
-                            let app_name = app_name.clone();
                             let id_clone = id.clone();
-                            //let path = format!("images/{}_{}", id_clone, 0)
-                            //let path = xdg_dirs.place_cache_file().unwrap();
-                            //let cache_path = path.to_str().unwrap();
-                            //let cache_path_clone = cache_path.clone();
-                            let xdg_dirs_clone = xdg_dirs.clone();
+                            let image_cache_clone = image_cache.clone();
                             let thr = thread::spawn(move || {
-                                let img = get_image_for(id_clone.parse().unwrap(), 0).expect("Unable to get image");
-
-                                let cache_path = xdg_dirs_clone.place_cache_file(format!("images/{}_{}", id_clone, 0)).unwrap();
-                                let file = File::create(cache_path.to_str().unwrap()).unwrap();
+                                let img = get_image_for(id_clone.parse().unwrap(), 0)("Unable to get image");
+                                let cache_path = image_cache_clone.to_str().unwrap();
+                                let file = File::create(cache_path).unwrap();
                                 let mut writer = BufWriter::new(file);
-                                writer.write(&img);
+                                writer.write(&img).expect("unable to write file !");
                             });
-                            thr.join();
-                            let cache_path = xdg_dirs.place_cache_file(format!("images/{}_{}", id, 0));
-                            gdk_pixbuf::Pixbuf::new_from_file_at_scale(&cache_path.unwrap().to_str().unwrap(),
+                            thr.join().unwrap();
+                            let cache_path = image_cache.to_str().unwrap();
+                            gdk_pixbuf::Pixbuf::new_from_file_at_scale(&cache_path,
                                                                        250, 250, true)
                         }
                     };

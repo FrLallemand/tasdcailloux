@@ -1,8 +1,5 @@
-use std::fs;
-use std::fs::File;
-use std::io::{BufReader, BufWriter, Read, Write};
+use std::io::{Read, Write};
 use std::sync::Mutex;
-use std::path::Path;
 
 use nanomsg::{Socket, Protocol};
 use bincode::{serialize, deserialize, Infinite};
@@ -17,7 +14,7 @@ lazy_static! {
         //socket.set_linger(-1).expect("cannot set linger");
 //        socket.set_send_timeout(200).unwrap();
  //       socket.set_receive_timeout(200).unwrap();
-        socket.set_receive_max_size(-1);
+        socket.set_receive_max_size(-1).unwrap();
         Mutex::new(socket)
     };
 }
