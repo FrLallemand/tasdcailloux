@@ -32,7 +32,7 @@ impl ConnectedApp {
 
 
 impl App {
-    pub fn new(list: Vec<Element>) -> App{
+    pub fn new() -> App{
         if gtk::init().is_err() {
             println!("failed to initialize GTK Application");
             process::exit(1);
@@ -55,7 +55,15 @@ impl App {
         xdg_dirs.create_cache_directory("images")
             .expect("cannot create cache directory");
 
-        App { window, header, content, origin_list: RefCell::new(list), name }
+        let mut origin_list: Vec<Element> = Vec::new();
+        if check_available() {
+            let origin_list_result = get_origin_list();
+            origin_list = origin_list_result
+                .unwrap_or(Vec::new());
+        }
+
+
+        App { window, header, content, origin_list: RefCell::new(origin_list), name }
     }
 
     pub fn connect_events(self) -> ConnectedApp {
