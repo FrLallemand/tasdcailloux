@@ -1,5 +1,4 @@
 pub mod schema;
-use std::error::Error;
 use dotenv::dotenv;
 use std::env;
 use diesel::sqlite::SqliteConnection;

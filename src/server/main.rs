@@ -14,7 +14,6 @@ extern crate r2d2_diesel;
 extern crate dotenv;
 extern crate nanomsg;
 
-#[macro_use]
 extern crate serde_derive;
 extern crate bincode;
 
@@ -23,54 +22,15 @@ pub mod controls;
 
 use nanomsg::{Socket, Protocol};
 use bincode::{serialize, deserialize, Infinite};
-use tasdcailloux::models::element::Element;
-use tasdcailloux::models::image::Image;
-use tasdcailloux::models::{Message, MessageType, Error};
+use tasdcailloux::models::{Message, MessageType};
 use db::get_db;
 use std::io::{Read, Write};
-/*
-#[derive(FromForm)]
-struct Range {
-    from: Option<i32>,
-    to: Option<i32>
-}
 
-#[get("/minerals/<id>")]
-fn mineral_get(db: DB, id: i32) -> Result<Json<Element>, Error> {
-    let element = controls::mineral::get_mineral(db.conn(), id)?;
-    Ok(Json(element))
-}
-
-#[get("/minerals?<range>")]
-fn minerals_get(range: Range, db: DB) -> Result<Json<Vec<Element>>, Error> {
-    let mut result = Err(Error::InternalServerError);
-    if let Some(from) = range.from {
-        if let Some(to) = range.to {
-            let elements = controls::mineral::get_minerals(db.conn(), )?;
-            result = Ok(Json(elements));
-        }
-    }
-    result
-}
-
-
-#[get("/minerals/<id>/origin")]
-fn origin_get(db: DB, id: i32) -> Result<Json<Element>, Error> {
-    let element = controls::mineral::get_mineral(db.conn(), id)?;
-    Ok(Json(element))
-}
-
-#[get("/minerals/<id>/dimensions")]
-fn dimension_get(db: DB, id: i32) -> Result<Json<Element>, Error> {
-    let element = controls::mineral::get_mineral(db.conn(), id)?;
-    Ok(Json(element))
-}
-*/
 fn main() {
     let mut socket = Socket::new(Protocol::Rep).unwrap();
     socket.bind(&"tcp://127.0.0.1:5555").expect("Fail to bind to tcp port");
-    //let image = controls::mineral::get_image(get_db().conn(), 1, -1);
-    //println!("{:?}", image);
+    let image = controls::mineral::get_images_count(get_db().conn(), 100);
+    println!("{:?}", image);
     loop {
         let mut msg = Vec::new();
         socket.read_to_end(&mut msg).unwrap();

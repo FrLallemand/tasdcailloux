@@ -75,23 +75,22 @@ impl StackWindow {
         let summary = Box::new(Orientation::Horizontal, 0);
         let image_box = Box::new(Orientation::Vertical, 0);
         let image = Image::new();
+        let background = Grid::new();
+        background.set_name("image_frame");
+        background.add(&image);
+        background.set_size_request(300, 300);
+        background.set_column_homogeneous(true);
+        background.set_row_homogeneous(true);
+        background.set_halign(Align::Center);
+        image_box.add(&background);
+        image_box.set_homogeneous(true);
 
         //TODO : use gtk resources
-        let style_context = image.get_style_context().unwrap();
+        let style_context = background.get_style_context().unwrap();
         let style = include_str!("../../../data/style/image_preview.css");
         let css = CssProvider::new();
         gtk::CssProviderExt::load_from_data(&css,style.as_bytes()).unwrap();
         style_context.add_provider(&css, STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-        image.set_margin_top(5);
-        image.set_margin_bottom(5);
-        image.set_margin_start(5);
-        image.set_margin_end(5);
-
-        image_box.add(&image);
-        image_box.set_size_request(300, 300);
-        image_box.set_homogeneous(true);
-        image.set_name("image_frame");
 
         summary.add(&image_box);
         summary.set_border_width(10);
