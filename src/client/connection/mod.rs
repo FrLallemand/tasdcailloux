@@ -3,13 +3,14 @@ use std::sync::Mutex;
 
 use nanomsg::{Socket, Protocol,  PollFd, PollRequest, PollInOut};
 use bincode::{serialize, deserialize, Infinite};
-use tasdcailloux::models::{Message, Error, Response, ResponseType};
+use tasdcailloux::models::{Message, Error, Response, ResponseType, ListCache};
 use tasdcailloux::models::MessageType as AppMessageType;
 use tasdcailloux::models::element::Element;
 use std::thread;
 use std::error::Error as StdError;
 use std::time::Duration;
 use chrono::naive;
+use chrono::prelude::*;
 
 lazy_static! {
     pub static ref SOCKET: Mutex<Socket> = {
@@ -75,13 +76,13 @@ pub fn get_origin_list() -> Result<Vec<Element>, Error>{
         })
 }
 
-pub fn get_last_updates(since: naive::NaiveDateTime) -> Result<Vec<Element>, Error>{
+pub fn get_last_updates(since: naive::NaiveDateTime) -> Result<ListCache, Error>{
     let message = Message{ message_type: AppMessageType::GetLastUpdates{since} };
     ask_and_get_answer(message)
         .and_then( |response| {
             match response.response_type {
                 ResponseType::GetLastUpdates{data} => data,
-                _ => Ok(Vec::new())
+                _ => Ok(ListCache{list: Vec::new(), timestamp: NaiveDate::from_ymd(1970, 1, 1).and_hms_milli(0, 0, 0, 42)})
             }
         })
 }

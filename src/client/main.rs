@@ -7,6 +7,9 @@ extern crate bincode;
 extern crate futures;
 extern crate chrono;
 extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+
 
 pub mod ui;
 pub mod connection;

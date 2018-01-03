@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["François Lallemand <frlallemand@protonmail.com>"]
 
 [dependencies]
-diesel = { version = "0.16.0", features = ["sqlite", "chrono"] }
-diesel_codegen = { version = "0.16.0", features = ["sqlite"] }
+diesel = { version = "*", features = ["sqlite", "chrono"] }
+diesel_codegen = { version = "*", features = ["sqlite"] }
 serde = "1.0.15"
 serde_derive = "1.0.15"
 bincode = "0.9.2"

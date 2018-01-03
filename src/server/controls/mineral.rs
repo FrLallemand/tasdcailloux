@@ -5,14 +5,18 @@ use db::schema::images::dsl::*;
 use tasdcailloux::models::element::Element;
 use tasdcailloux::models::image::Image;
 use tasdcailloux::models::Error;
+use tasdcailloux::models::ListCache;
 use super::wrap_diesel_error;
 
+use diesel::expression::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use chrono::naive;
+use chrono::NaiveDateTime;
+use chrono::prelude::*;
 
 pub fn get_mineral(connection: &SqliteConnection, mineral_id: i32) -> Result<Element, Error>{
     elements
@@ -29,12 +33,20 @@ pub fn get_mineral_range(connection: &SqliteConnection, from: i32, to: i32) -> R
         .map_err(wrap_diesel_error)
 }
 
-pub fn get_last_updated(connection: &SqliteConnection, since: naive::NaiveDateTime) -> Result<Vec<Element>, Error>{
+pub fn get_last_updated(connection: &SqliteConnection, since: naive::NaiveDateTime) -> Result<ListCache, Error>{
     elements
         .filter(last_updated.gt(since))
         .get_results::<Element>(connection)
         .map_err(wrap_diesel_error)
+        .and_then(|element_vec| {
+            elements
+                .select(max(last_updated))
+                .first::<Option<NaiveDateTime>>(connection) // must use an option, even though it is not nullable ?
+                .map_err(wrap_diesel_error)
+                .map(|opt| ListCache{list: element_vec, timestamp: opt.unwrap()} )
+        })
 }
+
 
 
 pub fn get_mineral_all(connection: &SqliteConnection) -> Result<Vec<Element>, Error>{

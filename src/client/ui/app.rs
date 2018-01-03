@@ -6,11 +6,15 @@ use gtk::*;
 use gdk_pixbuf;
 use std::process;
 use tasdcailloux::models::element::Element;
+use tasdcailloux::models::*;
 use std::cell::RefCell;
 use connection::*;
 use std::thread;
 use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::{BufWriter, Write, Read};
+use chrono::naive;
+use chrono::prelude::*;
+use bincode::{serialize, deserialize, Infinite};
 
 pub struct App {
     pub window:  Window,
@@ -18,8 +22,9 @@ pub struct App {
     pub content: Content,
     pub origin_list: RefCell<Vec<Element>>,
     pub name: String
- //   pub socket: Socket
+    //   pub socket: Socket
 }
+
 
 pub struct ConnectedApp(App);
 
@@ -53,13 +58,49 @@ impl App {
 
         let xdg_dirs = xdg::BaseDirectories::with_prefix(&name).unwrap();
         xdg_dirs.create_cache_directory("images")
-            .expect("cannot create cache directory");
+            .expect("cannot create image cache directory");
+        let list_path = xdg_dirs.place_cache_file("list")
+            .expect("cannot place list cache file");
 
-        println!("{:?}", get_one(1));
+
         let origin_list = {
             if check_available() {
-                get_origin_list()
-                    .unwrap_or(Vec::new())
+                //On cherche si il existe un cache
+                xdg_dirs.find_cache_file("list")
+                    .map_or_else(
+                        || {
+                            //Non, on récupère la liste et le timestamp, puis on le met en cache
+                            let dt =  NaiveDate::from_ymd(1970, 1, 1).and_hms_milli(0, 0, 0, 42);
+                            //Fail, we have nothing to show
+                            let list  = get_last_updates(dt).unwrap_or(ListCache{list: Vec::new(), timestamp: NaiveDate::from_ymd(1970, 1, 1).and_hms_milli(0, 0, 0, 42)});
+                            let encoded: Vec<u8> = serialize(&list, Infinite).unwrap();
+                            let file = File::create(&list_path).expect("cannot create list cache file");
+                            let mut writer = BufWriter::new(file);
+                            writer.write(&encoded).expect("unable to write file !");
+
+                            list.list
+                        },
+                        |path| {
+                            //Oui, on va essayer de le parser.
+                            let mut file = File::open(&path).expect("cannot open list cache file");
+                            let mut encoded: Vec<u8> = Vec::new();
+                            file.read_to_end(&mut encoded).unwrap();
+                            let list: ListCache = deserialize(&encoded).unwrap();
+                            //on cherche les changements, si echec on garde la liste du cache
+                            let updated_list  = get_last_updates(list.timestamp);
+                            match updated_list {
+                                Ok(new_list) => {
+                                    if new_list.list.len() == 0 {
+                                        list.list
+                                    } else {
+                                        new_list.list
+                                    }
+                                },
+                                Err(_) => list.list
+                            }
+
+                            //println!("{:?}", list);
+                        })
             } else {
                 Vec::new()
             }

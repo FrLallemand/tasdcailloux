@@ -36,9 +36,14 @@ pub enum ResponseType{
     GetCount{data: Result<i32, Error>},
     GetImagesCount{data: Result<i32, Error>},
     GetImage{data: Result<Vec<u8>, Error>},
-    GetLastUpdates{data: Result<Vec<Element>, Error>}
+    GetLastUpdates{data: Result<ListCache, Error>}
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct ListCache {
+    pub list: Vec<Element>,
+    pub timestamp: naive::NaiveDateTime
+}
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum Error{
