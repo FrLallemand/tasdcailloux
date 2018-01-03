@@ -14,6 +14,7 @@ extern crate serde_derive;
 extern crate bincode;
 
 extern crate dotenv;
+extern crate chrono;
 
 pub mod models;
 

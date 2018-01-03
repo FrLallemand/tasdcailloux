@@ -55,21 +55,21 @@ impl App {
         xdg_dirs.create_cache_directory("images")
             .expect("cannot create cache directory");
 
-        let mut origin_list: Vec<Element> = Vec::new();
-        if check_available() {
-            let origin_list_result = get_origin_list();
-            origin_list = origin_list_result
-                .unwrap_or(Vec::new());
-        }
-
+        println!("{:?}", get_one(1));
+        let origin_list = {
+            if check_available() {
+                get_origin_list()
+                    .unwrap_or(Vec::new())
+            } else {
+                Vec::new()
+            }
+        };
 
         App { window, header, content, origin_list: RefCell::new(origin_list), name }
     }
 
     pub fn connect_events(self) -> ConnectedApp {
-        //let socket = Arc::new(RwLock::new(establish_connection()));
         {
-            //let content = &self.content;
             self.create_list();
             self.connect_row_selected();
         }
@@ -108,6 +108,7 @@ impl App {
                             gdk_pixbuf::Pixbuf::new_from_file_at_scale(&cache_path.to_str().unwrap(),
                                                                        250, 250, true)
                         },
+
                         None => {
                             // Download and load it
                             //TODO : use future, make all this shit async. Good luck, you're on your own ;)

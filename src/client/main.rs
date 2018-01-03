@@ -5,14 +5,14 @@ extern crate gtk;
 extern crate bincode;
 #[macro_use]extern crate lazy_static;
 extern crate futures;
+extern crate chrono;
+extern crate serde;
 
 pub mod ui;
 pub mod connection;
 
 
 use ui::App;
-use connection::*;
-use tasdcailloux::models::element::Element;
 
 fn main() {
     App::new()
